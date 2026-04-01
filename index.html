@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 20px 24px;
+      border-bottom: 1px solid #2a2a4a;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .header-stats {
+      font-size: 13px;
+      color: #8888aa;
+      margin-bottom: 12px;
+    }
+
+    .header-stats span {
+      color: #6c63ff;
+      font-weight: 600;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #2a2a4a;
+      background: #111;
+      color: #e0e0e0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-bar input:focus {
+      border-color: #6c63ff;
+    }
+
+    .search-bar input::placeholder { color: #555; }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      background: #6c63ff;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .btn:hover { background: #5a52d5; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #2a2a4a;
+      color: #8888aa;
+    }
+
+    .btn-outline:hover {
+      background: #1a1a2e;
+      color: #e0e0e0;
+    }
+
+    .breadcrumb {
+      padding: 10px 24px;
+      background: #0f0f1a;
+      border-bottom: 1px solid #1a1a2e;
+      font-size: 13px;
+      color: #666;
+      display: none;
+    }
+
+    .breadcrumb.active { display: block; }
+
+    .breadcrumb span {
+      cursor: pointer;
+      color: #6c63ff;
+      transition: color 0.2s;
+    }
+
+    .breadcrumb span:hover { color: #8a83ff; }
+
+    .breadcrumb .sep { color: #333; cursor: default; margin: 0 6px; }
+
+    .breadcrumb .current { color: #e0e0e0; cursor: default; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .person-card {
+      background: #111119;
+      border: 1px solid #1e1e30;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .person-card:hover { border-color: #2a2a4a; }
+
+    .person-card.highlight { border-color: #6c63ff; background: #14142a; }
+
+    .person-header {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+      gap: 12px;
+      user-select: none;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .person-info { flex: 1; min-width: 0; }
+
+    .person-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e0e0e0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .person-meta {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .person-meta .tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #1a1a2e;
+      color: #6c63ff;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .team-count {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: #666;
+      flex-shrink: 0;
+    }
+
+    .team-count .num {
+      color: #6c63ff;
+      font-weight: 700;
+    }
+
+    .expand-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #555;
+      flex-shrink: 0;
+      font-size: 18px;
+      transition: transform 0.2s;
+    }
+
+    .expand-icon.open { transform: rotate(90deg); }
+
+    .person-children {
+      padding: 0 0 8px 24px;
+      display: none;
+    }
+
+    .person-children.open { display: block; }
+
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: #555;
+      font-size: 15px;
+    }
+
+    .view-team-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #2a2a4a;
+      background: transparent;
+      color: #6c63ff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .view-team-btn:hover {
+      background: #6c63ff;
+      color: #fff;
+    }
+
+    .back-btn {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #2a2a4a;
+      background: transparent;
+      color: #8888aa;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover { background: #1a1a2e; color: #e0e0e0; }
+
+    .back-btn.active { display: inline-flex; }
+
+    /* Color palette for avatars */
+    .av-1 { background: #6c63ff; }
+    .av-2 { background: #ff6b6b; }
+    .av-3 { background: #ffa726; }
+    .av-4 { background: #26a69a; }
+    .av-5 { background: #42a5f5; }
+    .av-6 { background: #ab47bc; }
+    .av-7 { background: #ec407a; }
+    .av-8 { background: #7e57c2; }
+
+    @media (max-width: 600px) {
+      header { padding: 16px; }
+      .container { padding: 12px; }
+      .person-header { padding: 12px; }
+      .person-children { padding-left: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Team Viewer</h1>
+  <div class="header-stats">Total Members: <span id="totalCount">0</span> &nbsp;|&nbsp; Direct: <span id="directCount">0</span></div>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search by name...">
+    <button class="btn btn-outline" id="expandAllBtn">Expand All</button>
+    <button class="btn btn-outline" id="collapseAllBtn">Collapse All</button>
+  </div>
+</header>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="container">
+  <button class="back-btn" id="backBtn">&#8592; Back</button>
+  <div id="tree"></div>
+</div>
+
+<script>
+const DATA = {"id":"craig-head","name":"Craig Baker (Head) Level 3- third","fd":true,"children":[{"id":"ricky","name":"Ricky Robinson Level 1","fd":true,"children":[{"id":"rob-dorscht","name":"Rob Dorscht","fd":true,"children":[{"id":"black-truth-tuqi","name":"Black (Truth)","fd":true,"children":[{"id":"elijah-cz4l","name":"Elijah","fd":true}]},{"id":"shavon-smith-ki2a","name":"Shavon Smith","fd":true},{"id":"person-1-2dye","name":"Robert Sr","fd":true},{"id":"rosalyn-m-1jjk","name":"Rosalyn M","fd":true}]},{"id":"claire-robinson-xgd7","name":"Claire Robinson","fd":true},{"id":"ladawn-robinson-q4bx","name":"LaDawn Robinson level 1","fd":true,"children":[{"id":"brandon-4n4x","name":"Brandon","fd":true},{"id":"russell-vo1n","name":"Russell","fd":true},{"id":"brennan-nu9k","name":"Brennan","fd":true},{"id":"charles-kwii","name":"Charles","fd":true,"children":[{"id":"b-e2up","name":"B","fd":true},{"id":"juan-ce4s","name":"Juan","fd":true},{"id":"adrian-urx3","name":"Adrian","fd":true}]},{"id":"person-o6nv","name":"Little ricky","fd":true}]},{"id":"david-gilbert-fezx","name":"David Gilbert","fd":true},{"id":"darianne-clark-xa6m","name":"Darianne Clark","fd":true},{"id":"senay-johnson-yorf","name":"Senay Johnson","fd":true}]},{"id":"brendon","name":"Brendon Jackson Level 3 - third","fd":true,"children":[{"id":"dc-danny","name":"DC - Danny Level 1","fd":true,"children":[{"id":"marc-genovese-y5px","name":"Marc Genovese","fd":true,"children":[{"id":"wife-85p1","name":"LISA","fd":true},{"id":"son-6dxf","name":"Stephen","fd":true}]},{"id":"daniel-jenkins-fiyr","name":"Daniel Jenkins","fd":true},{"id":"bernando-gotti-ez4b","name":"Bernando Gotti","fd":true},{"id":"shanel-0ouk","name":"Shanel","fd":true},{"id":"changseon-oh-cwbc","name":"Changseon Oh","fd":true}]},{"id":"dez-pena","name":"Dez Pena","fd":true,"children":[{"id":"wei","name":"WEI","fd":true},{"id":"anisha","name":"Anisha","fd":true},{"id":"danny-p","name":"DANNY P Level 1","fd":true,"children":[{"id":"pakistan1-94aa","name":"Shams ul hassan","fd":true},{"id":"pakistan2-xklx","name":"Ahmad Dilshad","fd":true},{"id":"pakistan-3-vctp","name":"Mubashir","fd":true},{"id":"pakistan-4-rl8z","name":"Muhammad Mubeen","fd":true},{"id":"pakistan-5-72cs","name":"Muhammad Moshin","fd":true}]}]},{"id":"elizeth","name":"Elizeth","fd":true,"children":[{"id":"ashley-4f4s","name":"Ashley","fd":true}]},{"id":"joanne","name":"Joanne","fd":true},{"id":"madison","name":"MadisonJetty Level 2","fd":true,"children":[{"id":"liana","name":"Liana Prishchenko Level 1","fd":true,"children":[{"id":"yana-0b5h","name":"Yana","fd":true,"children":[{"id":"andrey-prishchenko-rntq","name":"Andrey Prishchenko","fd":true,"children":[{"id":"larisa-prishchencko-t9x6","name":"Larisa Prishchencko","fd":true}]}]},{"id":"valarie-safronova-jvup","name":"Valarie Safronova","fd":true},{"id":"kirill-1gbm","name":"Kirill","fd":true},{"id":"kenedy-senewe-uaym","name":"Kenedy Senewe","fd":true},{"id":"lauren-smith-xvn3","name":"Lauran Smith","fd":true},{"id":"valorie-artopee-dly8","name":"Valorie Artopee","fd":true},{"id":"aniela-nt2r","name":"Aniela","fd":true},{"id":"sarah-amethyst-5m1e","name":"Sarah Amethyst","fd":true}]},{"id":"parice-rj6a","name":"Parice","fd":true},{"id":"bernie-u892","name":"Bernie","fd":true},{"id":"akeem-v-mz3b","name":"Akeem V","fd":true,"children":[{"id":"ronald-knight-0cck","name":"Ronald Knight","fd":true},{"id":"mal-vic-plb4","name":"Mal Vic","fd":true}]},{"id":"audrey-darnell-jgy1","name":"Audrey Darnell Level 1","fd":true,"children":[{"id":"melissa-gonzales-8n9b","name":"Melissa Gonzales","fd":true},{"id":"karin-kloog-1we5","name":"Karin Kloog","fd":true,"children":[{"id":"liz-5biq","name":"Liz Black","fd":true}]},{"id":"kianan-tlt9","name":"Kianna","fd":true},{"id":"keenan-ihif","name":"Keenan","fd":true},{"id":"sara-northwick-eld3","name":"Sara & Brandon Northwick","fd":true}]},{"id":"dane-jetty-yzue","name":"Dane Jetty","fd":true},{"id":"connie-xzlp","name":"Connie W","fd":true,"children":[{"id":"david-son-u1wr","name":"David(son)","fd":true},{"id":"dekoven-985q","name":"DeKoven","fd":true},{"id":"yvette-mom-ecf2","name":"Yvette (mom)","fd":true},{"id":"robbin-williams-16zj","name":"Robbin Williams","fd":true},{"id":"earl-williams-ni4l","name":"Earl Williams","fd":true}]},{"id":"sandi-weaver-q04a","name":"Sandi Weaver","fd":true,"children":[{"id":"anthony-w-cogx","name":"Anthony W","fd":true,"children":[{"id":"felicia-walker-ppoj","name":"Felicia Walker","fd":true}]},{"id":"elmer-barbee-1v72","name":"Elmer Barbee","fd":true,"children":[{"id":"bonner-csig","name":"Bonner - iranette","fd":true},{"id":"dylan-thompson-9l9w","name":"Dylan Thompson","fd":true},{"id":"aaron-buo8","name":"Aaron","fd":true}]},{"id":"lynn-briggs-j1y5","name":"Lynn Briggs","fd":true},{"id":"charles-kertell-ppj6","name":"Charles Kertell","fd":true}]},{"id":"lindsey-29ji","name":"Lindsey Lee","fd":true,"children":[{"id":"connor-8a96","name":"Connor","fd":true},{"id":"so-han-emxn","name":"So-Han","fd":true},{"id":"chaun-gjml","name":"Chaun Divine","fd":true,"children":[{"id":"wife-nhvk","name":"Riley","fd":true},{"id":"person-1-neky","name":"Vicktoria","fd":true},{"id":"person-2-fo4v","name":"Kara","fd":true},{"id":"person-3-pv0b","name":"person 3","fd":true}]},{"id":"cinya-t4tn","name":"Cinya","fd":true}]},{"id":"king-new-child-6440","name":"King New Child","fd":true},{"id":"marie-xg6v","name":"Marie","fd":true},{"id":"mallory-muhg","name":"Mallory","fd":true},{"id":"althea-0e40","name":"Althea","fd":true,"children":[{"id":"mya-64mv","name":"Mya","fd":true},{"id":"jiyah-ozl9","name":"Jiyah","fd":true},{"id":"swanna-48un","name":"Swanna","fd":true},{"id":"nandi-34i8","name":"Nandi","fd":true}]},{"id":"ted-g3j9","name":"Ted","fd":true},{"id":"ezra-ayad","name":"EZRA","fd":true},{"id":"jose-bf16","name":"Jose Hidalgo level 1","fd":true,"children":[{"id":"amely-hidalgo-0gxr","name":"Amely Hidalgo","fd":true},{"id":"issac-mendoza-1ceu","name":"Issac Mendoza","fd":true},{"id":"jose-lorenzo-hidalgo-jr-h11e","name":"Jose Lorenzo Hidalgo Jr","fd":true},{"id":"norely-hidalgo-hovb","name":"Norely Hidalgo","fd":true},{"id":"jorge-hidalgo-udpz","name":"Jorge Hidalgo","fd":true}]},{"id":"arica-zac3","name":"Arica","fd":true}]},{"id":"martha","name":"Martha","fd":true},{"id":"tierra","name":"Tierra","fd":true},{"id":"chels","name":"Chels","fd":true},{"id":"elliot","name":"Elliot","fd":true},{"id":"micah","name":"Micah","fd":true},{"id":"sanita","name":"Sanita","fd":true},{"id":"keith-hopkins","name":"Keith Hopkins Level 1","fd":true,"children":[{"id":"jenn","name":"Jenn Geisha Level 1","fd":true,"children":[{"id":"rocco-8c02","name":"Rocco","fd":true},{"id":"saudi-haza-8z8y","name":"Saudi Haza","fd":true},{"id":"mike-olsen-x6wc","name":"Mike Olson - Level 1","fd":true,"children":[{"id":"mckenzie-olsen-7tc4","name":"Mckenzie Buzard","fd":true,"children":[{"id":"sandra-buzzard-rrkg","name":"Sandra Buzzard","fd":true}]},{"id":"chuck-olson-854s","name":"Chuck Olson","fd":true},{"id":"deborah-broderick-3ro1","name":"Deborah Broderick","fd":true,"children":[{"id":"brian-olson-fexh","name":"Brian Olson","fd":true,"children":[{"id":"annesse-olson-v9ko","name":"Annesse Olson","fd":true},{"id":"mateo-olson-dt05","name":"Mateo Olson","fd":true},{"id":"andrew-mcnitt-rl18","name":"Andrew McNitt","fd":true}]}]},{"id":"shelby-pope-cukd","name":"Shelby Pope","fd":true},{"id":"eric-mass-9neo","name":"Eric Mass","fd":true,"children":[{"id":"chris-dang-i-forgot-his-last-name-0zf3","name":"Kris Ellis (Kranston)","fd":true,"children":[{"id":"amanda-ellis-6kuv","name":"Amanda Bryant","fd":true,"children":[{"id":"seema-857p","name":"Seema","fd":true}]},{"id":"lydia-sowe-t9ax","name":"Lydia Sowe","fd":true,"children":[{"id":"shawn-4u1m","name":"Shawn","fd":true},{"id":"kris-ko7s","name":"Kris","fd":true}]},{"id":"joe-brother-4vlh","name":"Joe (brother)","fd":true},{"id":"jiaul-op0k","name":"Jiaul","fd":true},{"id":"kylee-fbk8","name":"Kylee","fd":true}]}]}]},{"id":"jon-beckam-m7qq","name":"Jon Beckam","fd":true},{"id":"laura-ilishaev-y8b9","name":"Laura Ilishaev","fd":true}]},{"id":"jakes-van-eawg","name":"Jakes (van)","fd":true,"children":[{"id":"ian-fish-86kx","name":"Ian Fish","fd":true}]},{"id":"tyler-nolan-118q","name":"Tyler Nolan","fd":true,"children":[{"id":"ashley-spears-9px2","name":"Ashley Spears","fd":true}]},{"id":"catrina-o8s8","name":"Catrina Chutino - Level 1","fd":true,"children":[{"id":"skynett-p2xz","name":"Skynett(skyler) Level 1","fd":true,"children":[{"id":"cj-rvnf","name":"CJ","fd":true},{"id":"clay-tree-fynu","name":"Clay Tree","fd":true},{"id":"skyler-s-mom-p94k","name":"Skyler's Mom","fd":true},{"id":"lauren-chagnon-500o","name":"Lauren Chagnon","fd":true},{"id":"asaf-rpmt","name":"Asaf","fd":true}]},{"id":"dr-james-batson-iq2i","name":"Dr. James Batson","fd":true,"children":[{"id":"bev-f8ha","name":"Bev","fd":true},{"id":"todd-xs8m","name":"Todd","fd":true}]},{"id":"amber-sister-tw4i","name":"Amber (sister)","fd":true},{"id":"devora-p-5ncx","name":"Devora P","fd":true},{"id":"yesenia-0rcx","name":"Yesenia","fd":true}]},{"id":"mindy-l3jz","name":"Mindy","fd":true},{"id":"kossi-svc2","name":"Kossi (Midjrato)","fd":true},{"id":"carl-rehfuss-kxpe","name":"Carl Rehfuss","fd":true},{"id":"ham-pham-1hai","name":"Ham Pham","fd":true}]},{"id":"anthony-curtis","name":"Anthony Curtis","fd":true},{"id":"nathan","name":"Nathan","fd":true},{"id":"seth","name":"Seth","fd":true,"children":[{"id":"doug","name":"Doug","fd":true,"children":[{"id":"jerreck-c7ra","name":"Jerreck","fd":true}]},{"id":"ivan-tx","name":"IVAN (Texas)","fd":true},{"id":"nene-gmas","name":"Nene","fd":true}]},{"id":"laura","name":"Laura (B's mom)","fd":true},{"id":"michele","name":"Michele -Level 1","fd":true,"children":[{"id":"scott-7clh","name":"Scott","fd":true,"children":[{"id":"lacey-w6af","name":"Lacey","fd":true},{"id":"jake-uwdn","name":"Jake","fd":true},{"id":"monika-lipes-j60d","name":"Monika Lipes","fd":true},{"id":"martha-lipes-7c6x","name":"Martha Lipes","fd":true}]},{"id":"laura-bush-4o79","name":"Laura Bush level 1","fd":true,"children":[{"id":"caleb-bush-czan","name":"Caleb Bush","fd":true},{"id":"gary-reed-gxw9","name":"Gary Reed","fd":true},{"id":"peter-idugboe-62ev","name":"Peter Idugboe","fd":true,"children":[{"id":"patience-idugboe-hwkp","name":"Patience Idugboe","fd":true}]},{"id":"mary-elizabeth-cole-3b00","name":"Mary Elizabeth Cole","fd":true},{"id":"joy-gorman-jgfn","name":"Joy Gorman","fd":true},{"id":"margaret-nargi-la-dolce-qjbr","name":"Margaret Nargi ( La Dolce)","fd":true},{"id":"vlatrece-nc1p","name":"VLaTrece Franks","fd":true},{"id":"ebony-cormartie-hu01","name":"Ebony Cormartie","fd":true}]},{"id":"g-anthony-payne-1xzv","name":"G.Anthony Payne","fd":true},{"id":"kirsten-7w7w","name":"KIRSTEN","fd":true},{"id":"kleya-zu6t","name":"Kleya Wolin","fd":true,"children":[{"id":"karina-vazquez-brg2","name":"Karina Vazquez","fd":true}]}]},{"id":"adam","name":"Adam","fd":true},{"id":"andrew-f-yxx4","name":"Andrew F","fd":true,"children":[{"id":"blake-xvls","name":"Blake","fd":true}]},{"id":"nicholas-m-0xv8","name":"Nicholas M.","fd":true},{"id":"sir-james-nqpf","name":"Sir JAMES","fd":true},{"id":"carlos-c-1rpt","name":"Carlos C","fd":true,"children":[{"id":"hector-6rlf","name":"Hector","fd":true},{"id":"fransico-olzy","name":"Fransico","fd":true}]},{"id":"kisten-messina-a9hf","name":"Kirsten Messina Level 1","fd":true,"children":[{"id":"susan-aeg1","name":"Susan","fd":true},{"id":"lucy-daughter-vp0x","name":"Lucy (daughter)","fd":true},{"id":"aj-pd05","name":"AJ","fd":true},{"id":"jessica-7ogh","name":"Jessica","fd":true},{"id":"jacquie-xph2","name":"Jacquie","fd":true},{"id":"matt-k4lv","name":"Matt","fd":true}]},{"id":"jonathan-mejia-jcfj","name":"Jonathan Mejia Level 1","fd":true,"children":[{"id":"1-210-912-0571-ufaz","name":"Jesus Garcia","fd":true},{"id":"nishal-patel-wujb","name":"Nishal Patel","fd":true},{"id":"rajan-bhakta-aiy3","name":"Rajan Bhakta","fd":true,"children":[{"id":"yamil-santiago-torres-szm9","name":"Yamil Santiago-Torres","fd":true},{"id":"shayla-61kr","name":"Shayla","fd":true,"children":[{"id":"jayden-oa6o","name":"Jayden","fd":true}]},{"id":"david-rajan-ptm8","name":"David (Rajan)","fd":true},{"id":"karan-bhakta-ured","name":"Karan Bhakta","fd":true}]},{"id":"akash-bkakta-iyuu","name":"Akash Bkakta","fd":true},{"id":"ryan-f6qt","name":"Ryan","fd":true},{"id":"rick-9l75","name":"Rick","fd":true},{"id":"naomi-sister-0yl5","name":"Naomi (sister)","fd":true},{"id":"john-rnwj","name":"John","fd":true}]},{"id":"robert-rosa-v7m9","name":"Robert Rosa level 1","fd":true,"children":[{"id":"natalie-7rff","name":"Natalie","fd":true},{"id":"alexis-qppf","name":"Alexis","fd":true},{"id":"matt-epuy","name":"Matt","fd":true},{"id":"jackeline-f72q","name":"Jackeline","fd":true},{"id":"hayden-bx5g","name":"Hayden","fd":true},{"id":"guario-ka7e","name":"Guario","fd":true},{"id":"krista-xs0c","name":"Krista - Level 1","fd":true,"children":[{"id":"1-syo9","name":"Ki","fd":true},{"id":"2-pos8","name":"Bee","fd":true},{"id":"3-yhbx","name":"Alex","fd":true},{"id":"4-ip0b","name":"Bill Bones","fd":true},{"id":"jyoti-kyle-j3ip","name":"Jyoti Kyle","fd":true}]},{"id":"1-442-400-1514-8xk1","name":"Nathan","fd":true}]},{"id":"becky-mass-3mgv","name":"Becki Mass","fd":true,"children":[{"id":"walter-mpqi","name":"Walter (wali)","fd":true,"children":[{"id":"dalton-851b","name":"Dalton","fd":true},{"id":"mike-wali-rg7a","name":"Mike (wali)","fd":true}]},{"id":"david-oqtm","name":"David","fd":true},{"id":"nova-apgq","name":"Nova Level 1","fd":true,"children":[{"id":"jessica-christianson-4ilh","name":"Jessica Christianson","fd":true,"children":[{"id":"pete-christianson-50hz","name":"Pete Christianson","fd":true,"children":[{"id":"darren-6tnt","name":"Darren","fd":true,"children":[{"id":"jason-cmjm","name":"Jason","fd":true},{"id":"samuel-k8d4","name":"Samuel Duffy","fd":true,"children":[{"id":"sam-mom-7tr6","name":"Doralea","fd":true}]},{"id":"chris-sayr","name":"Chris","fd":true}]},{"id":"thomas-burlew-ii-nomc","name":"Thomas Burlew II","fd":true},{"id":"ruby-ixqm","name":"Ruby","fd":true},{"id":"david-combe-7127","name":"David Combe","fd":true}]}]},{"id":"marek-nh18","name":"Marek","fd":true},{"id":"charla-fccz","name":"Charla","fd":true},{"id":"lisa-noze","name":"Lisa Lee","fd":true,"children":[{"id":"dana-flippo-v38j","name":"Dana Flippo","fd":true,"children":[{"id":"dave-woods-l5pl","name":"Dave Woods","fd":true,"children":[{"id":"tara-ohj1","name":"Tara","fd":true}]}]}]},{"id":"george-r5p5","name":"George","fd":true},{"id":"andre-b3v5","name":"Andre","fd":true},{"id":"cheryl-wilson-idgn","name":"Cheryl Wilson","fd":true},{"id":"megan-brazil-5tt0","name":"Megan Brazil","fd":true},{"id":"lori-s-8m1q","name":"Lori S","fd":true},{"id":"peter-zee-pwuf","name":"Peter Zee","fd":true}]},{"id":"renee-norris-t5ji","name":"Renee Norris","fd":true}]},{"id":"parijat-pareek-00tm","name":"Parijat Pareek - Level 1","fd":true,"children":[{"id":"madhusudana-unhk","name":"Madhusudana","fd":true},{"id":"prahlad-chandra-vnz6","name":"Prahlad Chandra","fd":true,"children":[{"id":"yashwanth-patel-aq5y","name":"Yashwanth Patel","fd":true}]},{"id":"person-3-gf9z","name":"person 3","fd":true},{"id":"person-4-2dci","name":"person 4","fd":true},{"id":"person-5-hv6n","name":"person 5","fd":true}]},{"id":"nick-8umo","name":"Nick","fd":true,"children":[{"id":"michael-nicks-brother-tbtc","name":"Michael (nicks brother)","fd":true},{"id":"eric-gross-072y","name":"Eric Gross","fd":true},{"id":"nicks-mom-mn28","name":"Nicks, Mom","fd":true},{"id":"nicks-dad-bxtz","name":"Nicks Dad","fd":true},{"id":"carol-vasquez-nx1g","name":"Carol Vasquez","fd":true},{"id":"chris-starpoli-t7f0","name":"Chris Starpoli","fd":true},{"id":"gianna-calandra-obln","name":"Gianna Calandra","fd":true}]},{"id":"ramon-pbhj","name":"Ramon","fd":true,"children":[{"id":"mario-ktgq","name":"Mario","fd":true},{"id":"manuel-santiago-tpnv","name":"Manuel Santiago","fd":true}]},{"id":"shri-brahmaharishi-sandeepani-tejas-pab9","name":"Shri Brahmaharishi Sandeepani Tejas","fd":true},{"id":"jennifer-soltis-fo7p","name":"Jennifer Soltis","fd":true,"children":[{"id":"mom-yamt","name":"Joyce Ridenour","fd":true},{"id":"gregory-ridenour-wztk","name":"Gregory Ridenour","fd":true}]},{"id":"zenobia-morant-xe8p","name":"Zenobia Morant","fd":true},{"id":"satyam-1z4l","name":"Satyam","fd":true},{"id":"bc-f269","name":"BC","fd":true},{"id":"manu-pm02","name":"Manu","fd":true}]},{"id":"junior","name":"Junior Sylvain-Level 2","fd":true,"children":[{"id":"kim-s","name":"Kim S Level 1","fd":true,"children":[{"id":"sean-godson-ffhh","name":"Sean (godson)","fd":true},{"id":"candace-5vw3","name":"Candace","fd":true},{"id":"cheria-murray-5s2e","name":"Cheria Murray","fd":true},{"id":"kim-5ags","name":"Kim","fd":true},{"id":"kimiya-watkins-945o","name":"Kimiya Watkins Level 1","fd":true,"children":[{"id":"1-wntt","name":"1","fd":true},{"id":"2-groj","name":"2","fd":true},{"id":"3-2fif","name":"3","fd":true},{"id":"4-lejm","name":"4","fd":true},{"id":"5-x0qw","name":"5","fd":true}]},{"id":"tresta-ward-bl5h","name":"Tresta Ward","fd":true},{"id":"kat-walker-kksn","name":"Kat Walker- Level 1","fd":true,"children":[{"id":"1-oy6j","name":"1","fd":true},{"id":"2-2sdb","name":"2","fd":true},{"id":"3-ftzh","name":"3","fd":true},{"id":"4-6veb","name":"4","fd":true},{"id":"person-5-lovt","name":"Person 5","fd":true}]},{"id":"jaz-foster-kqul","name":"Jaz Foster","fd":true},{"id":"1-818-420-7407-89yz","name":"1-818-420-7407","fd":true},{"id":"katie-410y","name":"Katie","fd":true}]},{"id":"kris","name":"Kris","fd":true},{"id":"ralph","name":"Ralph level 1","fd":true,"children":[{"id":"nova-islam-au0d7duqic00-60s1","name":"Nova Islam","fd":true},{"id":"nate-2d4y","name":"Nate","fd":true},{"id":"anthony-7dcc","name":"Anthony","fd":true},{"id":"maleek-5cfv","name":"Maleek","fd":true},{"id":"trav-av29","name":"Trav","fd":true}]},{"id":"josh-c-582z","name":"Josh C. Level 1","fd":true,"children":[{"id":"phillip-cannon-6gql","name":"Phillip Cannon","fd":true,"children":[{"id":"person-1-iifn","name":"Brittany Banks","fd":true},{"id":"chanyel-burruss-3q7j","name":"Chanyel Burruss","fd":true}]},{"id":"dennison-long-yvh2","name":"Dennison Long","fd":true},{"id":"natalie-paget-4d4j","name":"Natalie Paget","fd":true},{"id":"joynal-ahmed-naoe","name":"Joynal Ahmed","fd":true},{"id":"kamal-ahmed-xm2h","name":"Kamal Ahmed","fd":true}]},{"id":"tony-l-e4g4","name":"Tony L","fd":true},{"id":"jefferson-j35n","name":"Jefferson","fd":true}]},{"id":"keyon","name":"Keyon Millard","fd":true,"children":[{"id":"parishia-whrv","name":"Parishia","fd":true,"children":[{"id":"brandon-bey-dp0h","name":"Brandon Bey - level 1","fd":true,"children":[{"id":"dominique-bey-knrz","name":"Dominique Brown Bey","fd":true},{"id":"will-owens-761p","name":"Will Owens","fd":true},{"id":"reiva-316y","name":"Reiva","fd":true,"children":[{"id":"mia-renee-xg26","name":"Mia Renee","fd":true}]},{"id":"jonas-9t16","name":"Jonas","fd":true},{"id":"carol-cyvu","name":"Carol","fd":true,"children":[{"id":"calvin-4yig","name":"Calvin","fd":true},{"id":"mr-rashad-0dwb","name":"Mr Rashad","fd":true}]}]}]},{"id":"glen-miliatry-veteran-68ui","name":"Glen (miliatry Veteran)","fd":true,"children":[{"id":"derrick-vnq3","name":"Derrick","fd":true}]},{"id":"yamina-uv9c","name":"Yasmine","fd":true},{"id":"marc-cj-replacement-qthj","name":"MARC (cj replacement)","fd":true}]},{"id":"katrina","name":"Katrina Baker Level 2","fd":true,"children":[{"id":"ash","name":"Ash Baker Level 1","fd":true,"children":[{"id":"xidra-767i","name":"Xidra","fd":true},{"id":"ghosty-0zww","name":"Ghosty","fd":true},{"id":"skye-lfp0","name":"Skye","fd":true},{"id":"sterlin-baker-tbyh","name":"Sterlin Baker","fd":true},{"id":"mae-baker-y4ua","name":"Mae Baker","fd":true}]},{"id":"jordan-h","name":"Jordan H Level 1","fd":true,"children":[{"id":"nick-and-rylee-04uq","name":"Nick and Rylee","fd":true},{"id":"ian-r6mv","name":"Ian","fd":true,"children":[{"id":"dillon-doyle-f5qb","name":"Dillon Doyle","fd":true}]},{"id":"paxton-davis-e93v","name":"Paxton Davis","fd":true,"children":[{"id":"jacob-sherrard-fekv","name":"Jacob Sherrard","fd":true}]},{"id":"carly-iyau","name":"Carly","fd":true},{"id":"mark-p9wx","name":"Mark","fd":true,"children":[{"id":"gabriel-lopez-aryy","name":"Gabriel Lopez","fd":true},{"id":"jennifer-mayen-309v","name":"Jennifer Mayen","fd":true}]},{"id":"hieu-nguyen-imsz","name":"Hieu Nguyen level 1","fd":true,"children":[{"id":"huong-t0t8","name":"Huong","fd":true},{"id":"minh-le-zxxj","name":"Minh Le","fd":true},{"id":"tuan-le-jhbi","name":"Tuan Le","fd":true},{"id":"jimmy-ho-b9sldrhvpkoo-ux2i","name":"Jimmy Ho","fd":true},{"id":"trung-nguyen-gmh0","name":"Trung Nguyen","fd":true}]}]},{"id":"phil-l","name":"Phil L","fd":true},{"id":"lorenzo-shellz","name":"Lorenzo Shellz","fd":true,"children":[{"id":"person-1-iyvi","name":"John French","fd":true}]},{"id":"hayden-g","name":"Hayden G Level 1","fd":true,"children":[{"id":"madyson-kbhq","name":"Madyson","fd":true},{"id":"macho-uuqp","name":"Macho","fd":true},{"id":"james-carlton-dorsett-bojm4ahd6800-lo8s","name":"James Carlton Dorsett","fd":true},{"id":"guage-bov1qikh5k00-sh0c","name":"Guage","fd":true},{"id":"trey-bov4njhd9o00-d9wi","name":"Trey","fd":true}]},{"id":"latima-l-ug7m","name":"Latima L Level 1","fd":true,"children":[{"id":"pat-lessard-xm3r","name":"Pat Lessard","fd":true},{"id":"gordon-anderson-v20v","name":"Gordon Anderson","fd":true},{"id":"jade-wright-xn1x","name":"Jade Wright","fd":true},{"id":"afroza-islam-bm1r0b3cj800-n34w","name":"Afroza Islam","fd":true},{"id":"marzina-bm21q1s0gg00-8ti0","name":"Marzina","fd":true}]},{"id":"harry-c-razors-x4yj","name":"Harry C. Razors Level 1","fd":true,"children":[{"id":"yudelca-r-z6cl","name":"Yudelca r.","fd":true,"children":[{"id":"alyssa-rivera-98ks","name":"Alyssa Rivera","fd":true}]},{"id":"annabella-r-kniw","name":"Annabella R","fd":true},{"id":"johayra-6a2v","name":"Johayra","fd":true,"children":[{"id":"brother-in-law-7eiq","name":"Omar Medrano","fd":true}]},{"id":"kadjal-p-tr01","name":"Kadjal P","fd":true,"children":[{"id":"honey-mugot-wgbv","name":"Honey Mugot","fd":true}]},{"id":"wendy-lou-wln7","name":"Wendy Lou","fd":true}]}]},{"id":"shawn","name":"Shawn W","fd":true,"children":[{"id":"kesi-6k6o","name":"KESI","fd":true,"children":[{"id":"violet-hzvb","name":"Violet","fd":true,"children":[{"id":"nordia-gordon-1ug7","name":"Nordia Gordon","fd":true}]}]},{"id":"crystal-l4nr","name":"Crystal","fd":true},{"id":"ken-james-llkd","name":"Ken James","fd":true},{"id":"kareem-igrq","name":"Kareem","fd":true}]},{"id":"jeremy","name":"Jeremy M","fd":true,"children":[{"id":"mondo-cot2","name":"Mondo","fd":true},{"id":"noah-mencia-wcff","name":"Noah Mencia","fd":true},{"id":"leda-j9tc","name":"Leda","fd":true}]},{"id":"deangelo-jones","name":"Deangelo Jones Level 2 - third","fd":true,"children":[{"id":"tiffany","name":"Tiffany","fd":true},{"id":"deanna-k4p3","name":"DeAnna Level 1","fd":true,"children":[{"id":"claudia-j-wyqg","name":"Claudia J","fd":true,"children":[{"id":"nichole-deshore-xe48","name":"Nichole Deshore","fd":true},{"id":"elisa-o-268d","name":"Elisa O.","fd":true}]},{"id":"ivy-e3ye","name":"Ivy","fd":true},{"id":"tiffany-cotton-43cr","name":"Tiffany cotton","fd":true},{"id":"alanna-q9by","name":"Alanna","fd":true},{"id":"kejuan-zi1v","name":"Kejuan","fd":true}]},{"id":"margo-ztt3","name":"Margo (Madison) Level 1","fd":true,"children":[{"id":"keke-yagu","name":"Keke","fd":true},{"id":"sheila-veev","name":"Sheila","fd":true},{"id":"lamar-k8ie","name":"Lamar","fd":true},{"id":"jason-uncle-8ud3","name":"Jason (uncle)","fd":true,"children":[{"id":"jmoney-uncle-hqo7","name":"Jmoney - Uncle","fd":true}]},{"id":"kela-6om3","name":"Kela","fd":true}]},{"id":"demarco-dz0a","name":"Demarco","fd":true},{"id":"auntie-n1j4","name":"Monica Nancy - Level 1","fd":true,"children":[{"id":"trap-u7jy","name":"TRAP Level 1","fd":true,"children":[{"id":"brandy-630o","name":"Brandy Level 1","fd":true,"children":[{"id":"1-dwwx","name":"Blake Sr Level 1","fd":true,"children":[{"id":"michael-samuel-sr-8wgw","name":"Michael Samuel Sr.","fd":true},{"id":"tracell-trice-cabs","name":"Tracell Trice","fd":true},{"id":"camil-coteat-ulf4","name":"Camil Coteat","fd":true},{"id":"brandon-coteat-22zi","name":"Brandon Coteat","fd":true},{"id":"santina-goodwin-sg3a","name":"Santina Goodwin","fd":true}]},{"id":"2-o2p5","name":"Claudine","fd":true},{"id":"3-2f3s","name":"Tywanna","fd":true},{"id":"4-yo0k","name":"Donna Level 1","fd":true,"children":[{"id":"breyana-cowan-znwg","name":"Breyana Cowan","fd":true},{"id":"jasmyne-sims-c58o","name":"Jasmyne Sims","fd":true},{"id":"ameca-williams-i15n","name":"Ameca Williams","fd":true},{"id":"keonna-thornton-2ji7","name":"Keonna Thornton","fd":true},{"id":"talia-williams-7p0t","name":"Talia Williams","fd":true}]},{"id":"5-71vv","name":"Reg","fd":true}]},{"id":"joy-zqbz","name":"Joy","fd":true},{"id":"blake-mvta","name":"Blake","fd":true},{"id":"tyron-wdkx","name":"Tyron","fd":true},{"id":"g-j8mu","name":"G","fd":true}]},{"id":"zig-edju","name":"ZIG","fd":true,"children":[{"id":"jimme-da89","name":"Jimme","fd":true,"children":[{"id":"t-edward-taylor-h9am","name":"T - Edward Taylor","fd":true},{"id":"mike-holmes-40km","name":"Mike Holmes","fd":true},{"id":"shaanan-shelby-kdz6","name":"Shaanan Shelby","fd":true}]}]},{"id":"tree-ejpz","name":"Tree","fd":true},{"id":"marcus-ada4","name":"Marcus","fd":true},{"id":"ruma-akter-atuhrl58hc00-tqfi","name":"Ruma Akter","fd":true},{"id":"gabby-yuf9","name":"Gabby","fd":true},{"id":"dedra-q9jk","name":"Dedra","fd":true}]},{"id":"tiffany-2-jgql","name":"TIP Level 1","fd":true,"children":[{"id":"nik-1wiq","name":"Nik","fd":true},{"id":"amber-palmer-6rgw","name":"Amber Palmer","fd":true},{"id":"nakia-weaver-ikc8","name":"Nakia Weaver","fd":true},{"id":"eugenia-hedgepeth-tmn1","name":"Eugenia Hedgepeth","fd":true},{"id":"ak-ocml","name":"AK","fd":true}]},{"id":"prashant-bowm","name":"Prashant - Level 1","fd":true,"children":[{"id":"srinivas-smea","name":"Srinivas","fd":true},{"id":"baskar-aqbca714ho00-ya6z","name":"Baskar","fd":true},{"id":"sambu-aqm7b8jvi800-4kcn","name":"Sambu","fd":true},{"id":"vishnu-aqmcvff3e000-ai33","name":"Vishnu","fd":true},{"id":"rajitha-aqmh5tvbk400-xv0z","name":"Rajitha","fd":true}]},{"id":"dilip-ca8z","name":"Dilip - Level 1","fd":true,"children":[{"id":"nag-h3jv","name":"Nag","fd":true},{"id":"santosh-udnl","name":"Santosh","fd":true},{"id":"venu-0j5z","name":"Venu","fd":true},{"id":"rajesh-8xdb","name":"Rajesh","fd":true},{"id":"shiv-kumar-arqj5raf9c00-ocuc","name":"Shiv Kumar","fd":true}]},{"id":"rajitha-z9p8","name":"Rajitha","fd":true},{"id":"raju-ifg2","name":"Raju","fd":true},{"id":"sunny-hfr1","name":"Sunny","fd":true}]},{"id":"clea-g","name":"Clea G - level 1","fd":true,"children":[{"id":"1-b1ow","name":"Rita Rani","fd":true},{"id":"2-634d","name":"Kokela","fd":true},{"id":"3-wn4u","name":"Nazma Akter","fd":true},{"id":"4-od45","name":"Mizanur Rahman","fd":true},{"id":"hubby-jrvu","name":"Hubby","fd":true}]},{"id":"ernest-tucker-ohau","name":"Ernest Tucker","fd":true,"children":[{"id":"1-804-243-0865-pga0","name":"KYLE","fd":true},{"id":"d-rob-dz3s","name":"D-Rob","fd":true},{"id":"george-fwhp","name":"George","fd":true}]},{"id":"micheal-uber-i58u","name":"Micheal Latimer","fd":true,"children":[{"id":"ivette-bayala-rs86","name":"Ivette Bayala","fd":true},{"id":"thomas-latimer-k6ns","name":"Thomas Latimer","fd":true}]}]};
+
+// Build index for fast lookups
+const nodeIndex = {};
+const parentIndex = {};
+
+function indexTree(node, parent) {
+  nodeIndex[node.id] = node;
+  if (parent) parentIndex[node.id] = parent.id;
+  if (node.children) {
+    node.children.forEach(c => indexTree(c, node));
+  }
+}
+indexTree(DATA, null);
+
+function countTotal(node) {
+  let count = 0;
+  if (node.children) {
+    count += node.children.length;
+    node.children.forEach(c => { count += countTotal(c); });
+  }
+  return count;
+}
+
+function getDirectCount(node) {
+  return node.children ? node.children.length : 0;
+}
+
+function cleanName(name) {
+  return name.replace(/\s*Level\s*\d+.*/i, '').replace(/\s*-\s*third.*/i, '').replace(/\s*\(Head\).*/i, '').replace(/\n/g, '').trim();
+}
+
+function getInitials(name) {
+  const clean = cleanName(name);
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return clean.substring(0, 2).toUpperCase();
+}
+
+function getAvatarClass(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash) + name.charCodeAt(i);
+  return 'av-' + (Math.abs(hash) % 8 + 1);
+}
+
+function getPath(nodeId) {
+  const path = [];
+  let current = nodeId;
+  while (current) {
+    path.unshift(nodeIndex[current]);
+    current = parentIndex[current];
+  }
+  return path;
+}
+
+// State
+let currentRoot = DATA;
+let navStack = [];
+
+function renderTree(container, nodes, searchTerm) {
+  container.innerHTML = '';
+  if (!nodes || nodes.length === 0) {
+    container.innerHTML = '<div class="no-results">No team members found</div>';
+    return;
+  }
+
+  nodes.forEach(node => {
+    const hasChildren = node.children && node.children.length > 0;
+    const totalBelow = countTotal(node);
+    const directBelow = getDirectCount(node);
+
+    const card = document.createElement('div');
+    card.className = 'person-card';
+    card.dataset.id = node.id;
+
+    if (searchTerm && cleanName(node.name).toLowerCase().includes(searchTerm.toLowerCase())) {
+      card.classList.add('highlight');
+    }
+
+    const header = document.createElement('div');
+    header.className = 'person-header';
+
+    const avatar = document.createElement('div');
+    avatar.className = `avatar ${getAvatarClass(node.name)}`;
+    avatar.textContent = getInitials(node.name);
+
+    const info = document.createElement('div');
+    info.className = 'person-info';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'person-name';
+    nameEl.textContent = cleanName(node.name);
+
+    const meta = document.createElement('div');
+    meta.className = 'person-meta';
+    if (hasChildren) {
+      meta.innerHTML = `<span class="tag">${directBelow} direct</span> <span class="tag">${totalBelow} total</span>`;
+    } else {
+      meta.textContent = 'No team members';
+    }
+
+    info.appendChild(nameEl);
+    info.appendChild(meta);
+
+    header.appendChild(avatar);
+    header.appendChild(info);
+
+    if (hasChildren) {
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'view-team-btn';
+      viewBtn.textContent = 'View Team';
+      viewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateTo(node);
+      });
+      header.appendChild(viewBtn);
+
+      const expandIcon = document.createElement('div');
+      expandIcon.className = 'expand-icon';
+      expandIcon.innerHTML = '&#9654;';
+      header.appendChild(expandIcon);
+
+      const childContainer = document.createElement('div');
+      childContainer.className = 'person-children';
+
+      header.addEventListener('click', () => {
+        const isOpen = childContainer.classList.toggle('open');
+        expandIcon.classList.toggle('open', isOpen);
+        if (isOpen && childContainer.children.length === 0) {
+          renderTree(childContainer, node.children, searchTerm);
+        }
+      });
+
+      card.appendChild(header);
+      card.appendChild(childContainer);
+    } else {
+      card.appendChild(header);
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function navigateTo(node) {
+  navStack.push(currentRoot);
+  currentRoot = node;
+  updateView();
+}
+
+function goBack() {
+  if (navStack.length > 0) {
+    currentRoot = navStack.pop();
+    updateView();
+  }
+}
+
+function updateView() {
+  const container = document.getElementById('tree');
+  const searchInput = document.getElementById('searchInput');
+  const backBtn = document.getElementById('backBtn');
+  const breadcrumb = document.getElementById('breadcrumb');
+
+  searchInput.value = '';
+
+  // Update stats
+  document.getElementById('totalCount').textContent = countTotal(currentRoot);
+  document.getElementById('directCount').textContent = getDirectCount(currentRoot);
+
+  // Update header
+  document.querySelector('header h1').textContent = cleanName(currentRoot.name) + "'s Team";
+
+  // Back button
+  backBtn.classList.toggle('active', navStack.length > 0);
+
+  // Breadcrumb
+  const path = getPath(currentRoot.id);
+  if (path.length > 1) {
+    breadcrumb.classList.add('active');
+    breadcrumb.innerHTML = path.map((p, i) => {
+      if (i === path.length - 1) return `<span class="current">${cleanName(p.name)}</span>`;
+      return `<span onclick="jumpTo('${p.id}')">${cleanName(p.name)}</span><span class="sep">/</span>`;
+    }).join('');
+  } else {
+    breadcrumb.classList.remove('active');
+  }
+
+  // Render children
+  const children = currentRoot.children || [];
+  renderTree(container, children, '');
+}
+
+window.jumpTo = function(nodeId) {
+  const node = nodeIndex[nodeId];
+  if (!node) return;
+  navStack = [];
+  const path = getPath(nodeId);
+  for (let i = 0; i < path.length - 1; i++) {
+    navStack.push(path[i]);
+  }
+  // Remove excess - navStack should only go up to parent of target
+  // Actually rebuild: navStack = all ancestors in order
+  navStack = [];
+  const fullPath = getPath(nodeId);
+  // navStack = ancestors before the target
+  for (let i = 0; i < fullPath.length - 1; i++) {
+    navStack.push(fullPath[i]);
+  }
+  // But we only need from DATA to parent
+  // Actually navStack represents previous roots we can go back to
+  currentRoot = node;
+  updateView();
+};
+
+// Search
+function searchTree(node, term) {
+  const results = [];
+  const clean = cleanName(node.name).toLowerCase();
+  if (clean.includes(term)) results.push(node);
+  if (node.children) {
+    node.children.forEach(c => {
+      results.push(...searchTree(c, term));
+    });
+  }
+  return results;
+}
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  const term = e.target.value.trim().toLowerCase();
+  const container = document.getElementById('tree');
+
+  if (!term) {
+    renderTree(container, currentRoot.children || [], '');
+    return;
+  }
+
+  const results = searchTree(currentRoot, term);
+  renderTree(container, results, term);
+});
+
+document.getElementById('backBtn').addEventListener('click', goBack);
+
+document.getElementById('expandAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.person-children').forEach(el => {
+    el.classList.add('open');
+    if (el.children.length === 0) {
+      const cardId = el.parentElement.dataset.id;
+      const node = nodeIndex[cardId];
+      if (node && node.children) renderTree(el, node.children, '');
+    }
+  });
+  document.querySelectorAll('.expand-icon').forEach(el => el.classList.add('open'));
+});
+
+document.getElementById('collapseAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.person-children').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.expand-icon').forEach(el => el.classList.remove('open'));
+});
+
+// Init
+updateView();
+</script>
+</body>
+</html>
